@@ -4,4 +4,7 @@
 3) Karpathy: http://karpathy.github.io/2015/05/21/rnn-effectiveness/
 4) LTSM Paper: https://arxiv.org/pdf/1411.4389.pdf
 
+### Other resources
+- https://towardsdatascience.com/introduction-to-video-classification-6c6acbc57356
+
 Basketball data Box link - https://app.box.com/folder/122398474710
