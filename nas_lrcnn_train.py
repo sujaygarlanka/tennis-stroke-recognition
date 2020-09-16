@@ -62,63 +62,65 @@ train_loader = DataLoader(train_data, shuffle=True, batch_size=batch_size, drop_
 val_loader = DataLoader(val_data, shuffle=True, batch_size=batch_size, drop_last=True)
 test_loader = DataLoader(test_data, shuffle=True, batch_size=batch_size, drop_last=True)
 
-##### Training #####
-# net = LCRNN(batch_size=batch_size)
+net = LCRNN(batch_size=batch_size)
 # # inp = torch.from_numpy(train[0:2])
 # # # inp = inp.unsqueeze(0)
 # # out = net(inp.float())
 
-# criterion = nn.CrossEntropyLoss()
-# optimizer = optim.Adam(net.parameters(), lr=0.001)
+def training():
+    criterion = nn.CrossEntropyLoss()
+    optimizer = optim.Adam(net.parameters(), lr=0.001)
 
-# for epoch in range(100):  # loop over the dataset multiple times
+    for epoch in range(100):  # loop over the dataset multiple times
 
-#     for i, data in enumerate(train_loader, 0):
-#         # get the inputs; data is a list of [inputs, labels]
-#         inputs, labels = data
+        for i, data in enumerate(train_loader, 0):
+            # get the inputs; data is a list of [inputs, labels]
+            inputs, labels = data
 
-#         # zero the parameter gradients
-#         net.zero_grad()
-#         # forward + backward + optimize
-#         outputs, hidden = net(inputs.float())
-#         _, class_labels = torch.max(labels.data, 1)
-#         loss = criterion(outputs, class_labels)
-#         loss.backward()
-#         optimizer.step()
+            # zero the parameter gradients
+            net.zero_grad()
+            # forward + backward + optimize
+            outputs, hidden = net(inputs.float())
+            _, class_labels = torch.max(labels.data, 1)
+            loss = criterion(outputs, class_labels)
+            loss.backward()
+            optimizer.step()
 
-#         print('[%d, %5d] loss: %.3f' % (epoch + 1, i + 1, loss))
+            print('[%d, %5d] loss: %.3f' % (epoch + 1, i + 1, loss))
 
-# torch.save(net.state_dict(), NET_PATH)
+    torch.save(net.state_dict(), NET_PATH)
 
-##### Testing ######
-net = LCRNN(batch_size=batch_size)
-net.load_state_dict(torch.load(NET_PATH))
-classes = ('backhand', 'bvolley', 'service', 'forehand',
-            'fvolley', 'smash')
-correct = 0
-total = 0
-with torch.no_grad():
-    for data in test_loader:
-        images, labels = data
-        outputs, hidden = net(images.float())
-        _, formatted_labels = torch.max(labels.data, 1)
-        _, predicted = torch.max(outputs.data, 1)
-        total += formatted_labels.size(0)
-        correct += (predicted == formatted_labels).sum().item()
-print('Accuracy of the network on the %d test images: %d %%' % (total, 100 * correct / total))
+def evaluate(loader):
+    net.load_state_dict(torch.load(NET_PATH))
+    classes = ('backhand', 'bvolley', 'service', 'forehand',
+                'fvolley', 'smash')
 
-class_correct = list(0. for i in range(6))
-class_total = list(0. for i in range(6))
-with torch.no_grad():
-    for data in test_loader:
-        images, labels = data
-        outputs, hidden = net(images.float())
-        _, formatted_labels = torch.max(labels.data, 1)
-        _, predicted = torch.max(outputs, 1)
-        c = (predicted == formatted_labels).squeeze()
-        for i in range(batch_size):
-            label = formatted_labels[i]
-            class_correct[label] += c[i].item()
-            class_total[label] += 1
-for i in range(6):
-    print('Accuracy of %d %5s : %2d %%' % (class_total[i], classes[i], 100 * class_correct[i] / class_total[i]))
+    correct = 0
+    total = 0
+    with torch.no_grad():
+        for data in loader:
+            images, labels = data
+            outputs, hidden = net(images.float())
+            _, formatted_labels = torch.max(labels.data, 1)
+            _, predicted = torch.max(outputs.data, 1)
+            total += formatted_labels.size(0)
+            correct += (predicted == formatted_labels).sum().item()
+    print('Accuracy of the network on the %d images: %d %%' % (total, 100 * correct / total))
+
+    class_correct = list(0. for i in range(6))
+    class_total = list(0. for i in range(6))
+    with torch.no_grad():
+        for data in loader:
+            images, labels = data
+            outputs, hidden = net(images.float())
+            _, formatted_labels = torch.max(labels.data, 1)
+            _, predicted = torch.max(outputs, 1)
+            c = (predicted == formatted_labels).squeeze()
+            for i in range(batch_size):
+                label = formatted_labels[i]
+                class_correct[label] += c[i].item()
+                class_total[label] += 1
+    for i in range(6):
+        print('Accuracy of %d %5s : %2d %%' % (class_total[i], classes[i], 100 * class_correct[i] / class_total[i]))
+
+evaluate(test_loader)
