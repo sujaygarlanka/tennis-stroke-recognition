@@ -74,22 +74,56 @@ def convert_video_to_sequence():
 
 def save_train_val_test_data():
     train = []
+    train_labels = []
     validation = []
+    validation_labels = []
     test = []
+    test_labels = []
     with open('data_file.csv') as csv_file:
         csv_reader = csv.reader(csv_file, delimiter=',')
         for row in csv_reader:
-            path = os.path.join('sequences', row[1], row[2] + '.npy')
+            stroke = row[1]
+            video_name = row[2]
+            path = os.path.join('sequences', stroke, video_name + '.npy')
             data = np.load(path)
             if row[0] == 'train':
                 train.append(data)
+                train_labels.append(get_one_hot_encoding(stroke))
             elif row[0] == 'validation':
                 validation.append(data)
+                validation_labels.append(get_one_hot_encoding(stroke))
             elif row[0] == 'test':
                 test.append(data)
+                test_labels.append(get_one_hot_encoding(stroke))
+
     train_path = os.path.join('sequences', 'train.npy')
+    train_labels_path = os.path.join('sequences', 'train_labels.npy')
     val_path = os.path.join('sequences', 'validation.npy')
+    val_labels_path = os.path.join('sequences', 'validation_labels.npy')
     test_path = os.path.join('sequences', 'test.npy')
+    test_labels_path = os.path.join('sequences', 'test_labels.npy')
+
     np.save(train_path, np.array(train))
+    np.save(train_labels_path, np.array(train_labels))
     np.save(val_path, np.array(validation))
+    np.save(val_labels_path, np.array(validation_labels))
     np.save(test_path, np.array(test))
+    np.save(test_labels_path, np.array(test_labels))
+
+def get_one_hot_encoding(label):
+    encoding = [0.0, 0.0, 0.0, 0.0, 0.0, 0.0]
+    if label == 'backhand':
+        encoding[0] = 1.0
+    elif label == 'bvolley':
+        encoding[1] = 1.0
+    elif label == 'service':
+        encoding[2] = 1.0
+    elif label == 'forehand':
+        encoding[3] = 1.0
+    elif label == 'fvolley':
+        encoding[4] = 1.0
+    elif label == 'smash':
+        encoding[5] = 1.0
+    return encoding
+    
+save_train_val_test_data()

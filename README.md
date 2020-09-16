@@ -6,5 +6,6 @@
 
 ### Other resources
 - https://towardsdatascience.com/introduction-to-video-classification-6c6acbc57356
+- https://blog.floydhub.com/long-short-term-memory-from-zero-to-hero-with-pytorch/
 
 Basketball data Box link - https://app.box.com/folder/122398474710
