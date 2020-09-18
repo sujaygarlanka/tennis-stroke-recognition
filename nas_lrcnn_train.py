@@ -4,7 +4,44 @@ import torch.nn as nn
 import torch.nn.functional as F
 import torch.optim as optim
 from torch.utils.data import TensorDataset, DataLoader
+import torchvision.models as models
+from torch.utils import data
+import h5py as h5
 
+class MyDataset(data.Dataset):
+    def __init__(self, archive, transform=None):
+        self.archive = h5.File(archive, 'r')
+        self.labels = self.archive['labels']
+        self.data = self.archive['video']
+        self.transform = transform
+
+    def __getitem__(self, index):
+        datum = self.data[index]
+        if self.transform is not None:
+            datum = self.transform(datum)
+        return datum, self.labels[index]
+        
+    def __len__(self):
+        return len(self.labels)
+
+    def close(self):
+        self.archive.close()
+
+class CustomDataset(data.Dataset):
+    def __init__(self, data_path, label_path, video_path, transform=None):
+        self.data = np.load(data_path)
+        self.labels = np.load(label_path)
+        self.video_paths = np.load(video_path)
+        self.transform = transform
+
+    def __getitem__(self, index):
+        datum = self.data[index]
+        if self.transform is not None:
+            datum = self.transform(datum)
+        return datum, self.labels[index], self.video_paths[index]
+        
+    def __len__(self):
+        return len(self.labels)
 
 class LCRNN(nn.Module):
     # input_dim: Number of features for each frames
@@ -57,10 +94,12 @@ test_labels = np.load('sequences/test_labels.npy')
 train_data = TensorDataset(torch.from_numpy(train), torch.from_numpy(train_labels))
 val_data = TensorDataset(torch.from_numpy(val), torch.from_numpy(val_labels))
 test_data = TensorDataset(torch.from_numpy(test), torch.from_numpy(test_labels))
+# train_data = MyDataset('./processed_data/train_data.h5')
+custom = CustomDataset('./processed_data/test_data.npy', './processed_data/test_labels.npy', './processed_data/test_video_paths.npy')
 
-train_loader = DataLoader(train_data, shuffle=True, batch_size=batch_size, drop_last=True)
+train_loader = DataLoader(train_data, shuffle=True, batch_size=4, drop_last=True)
 val_loader = DataLoader(val_data, shuffle=True, batch_size=batch_size, drop_last=True)
-test_loader = DataLoader(test_data, shuffle=True, batch_size=batch_size, drop_last=True)
+test_loader = DataLoader(custom, shuffle=True, batch_size=batch_size, drop_last=True)
 
 net = LCRNN(batch_size=batch_size)
 # # inp = torch.from_numpy(train[0:2])
@@ -99,7 +138,7 @@ def evaluate(loader):
     total = 0
     with torch.no_grad():
         for data in loader:
-            images, labels = data
+            images, labels, i = data
             outputs, hidden = net(images.float())
             _, formatted_labels = torch.max(labels.data, 1)
             _, predicted = torch.max(outputs.data, 1)
@@ -111,7 +150,7 @@ def evaluate(loader):
     class_total = list(0. for i in range(6))
     with torch.no_grad():
         for data in loader:
-            images, labels = data
+            images, labels, i = data
             outputs, hidden = net(images.float())
             _, formatted_labels = torch.max(labels.data, 1)
             _, predicted = torch.max(outputs, 1)
@@ -123,4 +162,22 @@ def evaluate(loader):
     for i in range(6):
         print('Accuracy of %d %5s : %2d %%' % (class_total[i], classes[i], 100 * class_correct[i] / class_total[i]))
 
+# print(train_data.__getitem__(2))
 evaluate(test_loader)
+# for data in test_loader:
+#     images, labels, i = data
+#     print(i)
+# print('done')
+# Inception_V3 = models.inception_v3(pretrained=True)
+# Inception_V3.fc = nn.Identity()
+# for param in Inception_V3.parameters():
+#     print(param)
+#     param.requires_grad = False
+
+# # for param in Inception_V3.parameters():
+#     # print(param.requires_grad)
+
+# print(net.parameters())
+
+# test = np.load('./processed_data/train/p1_backhand_s3.npy')
+# print(test.shape)
